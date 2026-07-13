@@ -1,0 +1,393 @@
+#include "stage1_icarus_defs.fcl"
+
+BEGIN_PROLOG
+
+### This fcl configuration creates ICARUS calibration-NTuples 
+### with reconstructed tracks timed by the CRT, and with the trigger
+### emulation ran in a 400 ns window around the CRT time.
+### Note that very-loose OpFlashes are also defined
+### to be able to perform a non-biasing TPC-PMT matching.
+### Fix settings, so that will not be overridden later;
+### these are defined in `triggeremu_data_config_icarus.fcl`
+
+# do not emulate any fixed level threshold (only `pmtthr`)
+triggeremu_data_config_icarus.settings.PMTADCthresholds @protect_ignore: []
+
+# fix the PMT mapping
+triggeremu_data_config_icarus.settings.missing_pmt_channels @protect_ignore: [ 5, 21, 52, 59, 71, 103, 127, 131, 139, 161, 190, 215, 248, 350 ]
+
+END_PROLOG
+
+#include "messages_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "services_common_icarus.fcl"
+#include "trigger_icarus.fcl"
+#include "triggeremu_data_config_icarus.fcl"
+#include "icarus_trackcalo_skimmer.fcl"
+#include "calorimetry_icarus.fcl"
+
+BEGIN_PROLOG
+
+triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair: [
+  { inMainWindow: 1   inOppositeWindow: 1 },       # [0]
+  { inMainWindow: 2   inOppositeWindow: 2 },       # [1]
+  { inMainWindow: 3   inOppositeWindow: 3 },       # [2]
+  { inMainWindow: 4   inOppositeWindow: 4 },       # [3]
+  { inMainWindow: 5   inOppositeWindow: 5 },       # [4]
+  { inMainWindow: 6   inOppositeWindow: 6 },       # [5]
+  { inMainWindow: 2   sumOfOppositeWindows:  3 },  # [6]   "S3"
+  { inMainWindow: 3   sumOfOppositeWindows:  5 },  # [7]   "S5"
+  { inMainWindow: 4   sumOfOppositeWindows:  8 },  # [8]   "S8"
+  { inMainWindow: 5   sumOfOppositeWindows: 10 },  # [9]   "S10"
+  { inMainWindow: 8   sumOfOppositeWindows: 15 },  # [10]  "S15"
+  { inMainWindow: 2   sumOfOppositeWindows:  4 },  # [11]  "S4"
+  { inMainWindow: 4   sumOfOppositeWindows:  7 },  # [12]  "S7"
+  { inMainWindow: 5   sumOfOppositeWindows:  9 }   # [13]  "S9"
+] # SlidingWindowTriggerPatternsWindowPair
+
+timetracktreestorage_base: {
+  module_type: "TimeTrackTreeStorageCRT"
+  BeamGateProducer: "daqTrigger"
+  TriggerProducer:  "daqTrigger"
+  MODA: 0.930
+  MODB: 0.212
+  Wion: 0.0000236016
+  Efield: 0.5
+  ForceDowngoing: true
+}
+
+gatesFromTracks_icarus: {
+
+  module_type: BeamGateInfoFromTracksCRT
+  
+  GateStartOffset: "0 ns"
+  GateEndOffset:   "400 ns"
+  
+  T0Producer:    @nil  # must override
+  T0selProducer: @nil  # must override
+  
+} # gatesFromTracks_icarus
+
+
+END_PROLOG
+
+process_name: storeTree
+
+services: {
+  @table::triggeremu_data_config_icarus.services # from triggeremu_data_config_icarus.fcl
+  @table::icarus_common_services
+  message:     @local::icarus_message_services_interactive_debug
+  TimeTracker: {}
+  TFileService: {
+    fileName: "timedtracks_store_triggeremu.root"
+  }
+}
+
+# customization of message destinations from trigger emulation
+services.message.destinations: {
+  @table::services.message.destinations
+  @table::triggeremu_data_config_icarus.messagedestinations
+}
+
+services.SpaceChargeService: @local::icarus_spacecharge
+
+physics: {
+  filters: {
+    t0selectorW: {
+      module_type: TimedTrackSelectorCRT
+      #AngleCosCut: -0.9396926
+      #TrackTimeTags: [ pandoraGausCryoW, pandoraGausCryoE ]
+      TrackTimeTags: [ "CRTT0MatchingW" ]
+
+    }
+    t0selectorE: {
+      module_type: TimedTrackSelectorCRT
+      #AngleCosCut: -0.9396926
+      TrackTimeTags: [ "CRTT0MatchingE" ]
+    }
+  }
+
+  producers: {
+
+    gatesFromTracksE: {
+      @table::gatesFromTracks_icarus
+      T0Producer:    "CRTT0MatchingE"
+      T0selProducer: t0selectorE
+    }
+    gatesFromTracksW: {
+      @table::gatesFromTracks_icarus
+      T0Producer:    "CRTT0MatchingW"
+      T0selProducer: t0selectorW
+    }
+  
+    @table::triggeremu_data_config_icarus.producers # from triggeremu_data_config_icarus.fcl
+
+    simSlidingORS4W: {
+      @table::triggeremu_data_config_icarus.producers.simSlidingORM1W
+      Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[11]  # S4
+    }
+    simSlidingORS7W: {
+      @table::triggeremu_data_config_icarus.producers.simSlidingORM1W
+      Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[12]  # S7
+    }
+    simSlidingORS9W: {
+      @table::triggeremu_data_config_icarus.producers.simSlidingORM1W
+      Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[13]  # S9
+    }
+
+    simSlidingORS4E: {
+      @table::triggeremu_data_config_icarus.producers.simSlidingORM1E
+      Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[11]  # S4
+    }
+    simSlidingORS7E: {
+      @table::triggeremu_data_config_icarus.producers.simSlidingORM1E
+      Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[12]  # S7
+    }
+    simSlidingORS9E: {
+      @table::triggeremu_data_config_icarus.producers.simSlidingORM1E
+      Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[13]  # S9
+    }
+
+    #calorimetry
+
+    calorimetryCryoE: {
+      @table::standard_gnocchicaloicarus  # from calorimetryICARUS.fcl
+      AssocHitModuleLabel: ""
+      CaloAlg: {
+        CalAmpConstants: [5.82554e-4, 1.16594e-3]
+        CalAreaConstants: [1, 1, 1]
+        CaloDoLifeTimeCorrection: false
+        CaloLifeTimeForm: 0
+        CaloUseModBox: true
+      }
+      ChargeMethod: 1
+      Cryostat: 0
+      FieldDistortion: false
+      FieldDistortionEfield: false
+      NormTools: [
+        {
+            DBFileName: "tpc_elifetime_data"
+            DBTag: "v2r1"
+            Verbose: false
+            tool_type: "NormalizeDriftSQLite"
+        },
+        {
+            DBFileName: "tpc_yz_correction_data"
+            DBTag: "v2r1"
+            Verbose: false
+            tool_type: "NormalizeYZSQL"
+        },
+        {
+            CalConstants: [
+              8.032e1,
+              7.982e1,
+              8.224e1,
+              8.168e1
+            ]
+            Verbose: false
+            tool_type: "NormalizeTPCLocal"
+        }
+      ]
+      T0ModuleLabel: ""
+      TrackIsFieldDistortionCorrected: false
+      TrackModuleLabel: "pandoraTrackGausCryoE"
+      module_type: "GnocchiCalorimetry"
+    }
+    calorimetryCryoW: {
+      @table::standard_gnocchicaloicarus  # from calorimetryICARUS.fcl
+      AssocHitModuleLabel: ""
+      CaloAlg: {
+        CalAmpConstants: [5.82554e-4, 1.16594e-3]
+        CalAreaConstants: [1, 1, 1]
+        CaloDoLifeTimeCorrection: false
+        CaloLifeTimeForm: 0
+        CaloUseModBox: true
+      }
+      ChargeMethod: 1
+      Cryostat: 0
+      FieldDistortion: false
+      FieldDistortionEfield: false
+      NormTools: [
+        {
+          DBFileName: "tpc_elifetime_data"
+          DBTag: "v2r1"
+          Verbose: false
+          tool_type: "NormalizeDriftSQLite"
+        },
+        {
+          DBFileName: "tpc_yz_correction_data"
+          DBTag: "v2r1"
+          Verbose: false
+          tool_type: "NormalizeYZSQL"
+        },
+        {
+          CalConstants: [
+            8.032e1,
+            7.982e1,
+            8.224e1,
+            8.168e1
+          ]
+          Verbose: false
+          tool_type: "NormalizeTPCLocal"
+        }
+      ]
+      T0ModuleLabel: ""
+      TrackIsFieldDistortionCorrected: false
+      TrackModuleLabel: "pandoraTrackGausCryoW"
+      module_type: "GnocchiCalorimetry"
+    }
+    newopflashCryoE: {
+        AlgoConfig: {
+          DebugMode: false
+          HitVetoRangeEnd: []
+          HitVetoRangeStart: []
+          IntegralTime: 10
+          MinMultCoinc: 2
+          MinPECoinc: 40
+          OpChannelRange: [
+              0,
+              179
+          ]
+          PEThreshold: 40
+          PEThresholdHit: 1
+          PreSample: 2e-2
+          TimeResolution: 1e-2
+          VetoSize: 10
+        }
+        FlashFinderAlgo: "SimpleFlashAlgo"
+        OpHitProducer: "ophit"
+        PECalib: {
+          SPEAreaGain: 3.18256e2
+        }
+        module_type: "ICARUSFlashFinder"
+    }
+    newopflashCryoW: {
+        AlgoConfig: {
+          DebugMode: false
+          HitVetoRangeEnd: []
+          HitVetoRangeStart: []
+          IntegralTime: 10
+          MinMultCoinc: 2
+          MinPECoinc: 40
+          OpChannelRange: [
+              180,
+              359
+          ]
+          PEThreshold: 40
+          PEThresholdHit: 1
+          PreSample: 2e-2
+          TimeResolution: 1e-2
+          VetoSize: 10
+        }
+        FlashFinderAlgo: "SimpleFlashAlgo"
+        OpHitProducer: "ophit"
+        PECalib: {
+          SPEAreaGain: 3.18256e2
+        }
+        module_type: "ICARUSFlashFinder"
+    }
+    
+  }
+
+  analyzers: {
+    t0TreeStoreW: {
+      @table::timetracktreestorage_base
+      T0selProducer: "t0selectorW"
+      T0Producer: "pandoraGausCryoW"
+      PFPproducer: "pandoraTrackGausCryoW"
+      TrackProducer: "pandoraTrackGausCryoW"
+      TrackFitterProducer: "pandoraTrackGausCryoW"
+      CaloProducer: "calorimetryCryoW"
+      FlashProducer: "newopflashCryoW"
+      CRTMatchingProducer: "CRTT0MatchingW"
+      EmulatedTriggers: [
+        { Name:       "M1s"   TriggerTag: "simSlidingORM1W" },
+        { Name:       "S3s"   TriggerTag: "simSlidingORS3W" },
+        { Name:       "S4s"   TriggerTag: "simSlidingORS4W" },
+        { Name:       "S5s"   TriggerTag: "simSlidingORS5W" },
+        { Name:       "S7s"   TriggerTag: "simSlidingORS7W" },
+        { Name:       "S8s"   TriggerTag: "simSlidingORS8W" },
+        { Name:       "S9s"   TriggerTag: "simSlidingORS9W" },
+        { Name:      "S10s"   TriggerTag: "simSlidingORS10W" },
+        { Name:      "S15s"   TriggerTag: "simSlidingORS15W" }
+      ]
+      LogCategory: "TimeTrackTreeStorageCryoW"
+      SelectEvents: [ "selectionW" ]
+      }
+
+    t0TreeStoreE: {
+      @table::timetracktreestorage_base
+      T0selProducer: "t0selectorE"
+      T0Producer: "pandoraGausCryoE"
+      PFPproducer: "pandoraTrackGausCryoE"
+      TrackProducer: "pandoraTrackGausCryoE"
+      TrackFitterProducer: "pandoraTrackGausCryoE"
+      CaloProducer: "calorimetryCryoE"
+      FlashProducer: "newopflashCryoE"
+      CRTMatchingProducer: "CRTT0MatchingE"
+      EmulatedTriggers: [
+        { Name:       "M1s"   TriggerTag: "simSlidingORM1E" },
+        { Name:       "S3s"   TriggerTag: "simSlidingORS3E" },
+        { Name:       "S4s"   TriggerTag: "simSlidingORS4E" },
+        { Name:       "S5s"   TriggerTag: "simSlidingORS5E" },
+        { Name:       "S7s"   TriggerTag: "simSlidingORS7E" },
+        { Name:       "S8s"   TriggerTag: "simSlidingORS8E" },
+        { Name:       "S9s"   TriggerTag: "simSlidingORS9E" },
+        { Name:      "S10s"   TriggerTag: "simSlidingORS10E" },
+        { Name:      "S15s"   TriggerTag: "simSlidingORS15E" }
+      ]
+      LogCategory: "TimeTrackTreeStorageCryoE"
+      SelectEvents: [ "selectionE" ]
+      }
+
+  } #analyzers
+  
+  selectionW: [ "t0selectorW", "gatesFromTracksW", @sequence::triggeremu_data_config_icarus.producerpathW, simSlidingORS4W, simSlidingORS7W, simSlidingORS9W ]
+  selectionE: [ "t0selectorE", "gatesFromTracksE", @sequence::triggeremu_data_config_icarus.producerpathE, simSlidingORS4E, simSlidingORS7E, simSlidingORS9E ]
+  runprod: [calorimetryCryoE, calorimetryCryoW, newopflashCryoE, newopflashCryoW]
+  trigger_paths: [ runprod, selectionW, selectionE]
+  ana: [ t0TreeStoreW, t0TreeStoreE ]
+  streams: [ "rootoutput" ]
+  end_paths: [ ana, streams ]
+  
+} # physics
+
+physics.producers.calorimetryCryoE.TrackModuleLabel: "pandoraTrackGausCryoE"
+physics.producers.calorimetryCryoW.TrackModuleLabel: "pandoraTrackGausCryoW"
+
+# disable the functionality of the module without removing it from path (for convenience)
+physics.producers.pmtfixedthr.module_type: DummyProducer
+
+
+# ------------------------------------------------------------------------------
+outputs: {
+  rootoutput: {
+    @table::icarus_rootoutput
+    
+    fileProperties: { maxInputFiles: 1 }
+    checkFileName: false
+    
+    # these data products are enough to rerun this job (until hits are needed):
+    outputCommands: [
+      "drop *"
+      , "keep sbn::PMTconfiguration_*_*_*", "keep *_daqTrigger_*_*"
+      , "keep *_CRTT0Matching*_*_*", "keep *_daqTrigger_*_*"
+      , "keep *_pandoraGausCryo*_*_stage1", "drop *recob::SpacePoint*_pandoraGausCryo*_*_stage1", "keep *_pandoraTrackGausCryo*_*_stage1"
+      , "keep *_cluster3DCryo*_*_*", "drop *recob::SpacePoint*_cluster3DCryo*_*_*"
+      , "keep *_opflashCryo*_*_*"
+      , "keep *_*_*_TrgEmu", "keep *_*_*_T0sel"
+      , "keep *_*_*_storeTree"
+      ]
+
+  }
+}
+
+physics.producers.CRTT0MatchingE:    @local::standard_crtt0producerE
+physics.producers.CRTT0MatchingW:    @local::standard_crtt0producerW
+
+physics.selectionE: [ CRTT0MatchingE, @sequence::physics.selectionE ]
+physics.selectionW: [ CRTT0MatchingW, @sequence::physics.selectionW ]
+
+# use the correct CRT timing approach
+physics.producers.CRTT0MatchingW.T0Alg.TSMode: 1
+physics.producers.CRTT0MatchingE.T0Alg.TSMode: 1
