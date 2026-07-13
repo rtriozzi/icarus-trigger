@@ -25,3 +25,25 @@ jupyter notebook --no-browser
 # open the link on a web browser
 ```
 If you're running the notebook on a FNAL machine, forward it to your local machine: to do this, `ssh` into the FNAL GPVM with `-L <port>:localhost:<port>`, where `<port>` is the port that the notebook opens with (e.g., `8888`).
+
+### Process data and submit jobs
+
+Once ICARUS products are setup, you can process data (give a look at `scripts/DumpRunRawFiles.sh`). 
+For reference, you can use the old-ish, but stable, `v09_89_01` icaruscode tag.
+From the raw file, you can use `lar` to process data through the Stage0, Stage1, and analysis stages (minimal usage: `lar -c <config> <file>`), with the following chain:
+
+1. `stage0_run2_icarus.fcl`;
+2. `config/fcl/stage1_run2_1d_icarus_AllTrack.fcl` (preserves _all_ reconstructed tracks);
+3. `config/fcl/NTuples_CRT_TrigEmu_LooseOpFlash_AllMjs.fcl` (runs trigger emulation, extracts easy-to-use ROOT TTree).
+
+When processing a large set of files, you _really_ should get into the grid: you can use the grid configurations in `config/grid` (based on `LArBatch/project.py`).
+
+### Select stopping muons with trigger emulation
+
+The last processing stage outpus a set of ROOT TTrees (or, NTuples), where each entry is a reconstructed track, along with the associated TPC, CRT, PMT, and trigger information.
+The two ROOT macros in `src/ntuple` can be used to select the tracks identified as "stopping muons" from each analysis NTuple, taking as input two file names (to store output information for further analysis), and the electron lifetime (expressed in ms) of the corresponding DAQ run.
+
+Launch the analysis on a whole batch of data with `scripts/LaunchStoppingMuonAnalysis.sh`: this is currently set up to run on the west cryostat; please create a similar script for the east cryostat if you like this.
+Note: launch this in the background and monitor the results (`nohup bash scripts/LaunchStoppingMuonAnalysis.sh > Ouput.out &`); you should be using `tmux` or `screen` if you're working within a SL7 container.
+
+The output is a file where some of the stopping muon properties are stored along with the result of the trigger emulation.
