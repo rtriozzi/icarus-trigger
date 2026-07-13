@@ -13,8 +13,8 @@ BEGIN_PROLOG
 # do not emulate any fixed level threshold (only `pmtthr`)
 triggeremu_data_config_icarus.settings.PMTADCthresholds @protect_ignore: []
 
-# fix the PMT mapping
-triggeremu_data_config_icarus.settings.missing_pmt_channels @protect_ignore: [ 5, 21, 52, 59, 71, 103, 127, 131, 139, 161, 190, 215, 248, 350 ]
+# turn OFF correct PMT channels for Run3
+triggeremu_data_config_icarus.settings.missing_pmt_channels @protect_ignore: [ 71, 103, 215 ]
 
 END_PROLOG
 
@@ -25,9 +25,11 @@ END_PROLOG
 #include "triggeremu_data_config_icarus.fcl"
 #include "icarus_trackcalo_skimmer.fcl"
 #include "calorimetry_icarus.fcl"
+# 
 
 BEGIN_PROLOG
 
+# explictly defined majorities, adding what's needed
 triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair: [
   { inMainWindow: 1   inOppositeWindow: 1 },       # [0]
   { inMainWindow: 2   inOppositeWindow: 2 },       # [1]
@@ -46,34 +48,32 @@ triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair: [
 ] # SlidingWindowTriggerPatternsWindowPair
 
 timetracktreestorage_base: {
+
   module_type: "TimeTrackTreeStorageCRT"
   BeamGateProducer: "daqTrigger"
   TriggerProducer:  "daqTrigger"
-  MODA: 0.930
-  MODB: 0.212
-  Wion: 0.0000236016
-  Efield: 0.5
   ForceDowngoing: true
+
 }
 
+# emulation gates are fixed at [0, 400] ns after track now.
 gatesFromTracks_icarus: {
 
   module_type: BeamGateInfoFromTracksCRT
-  
   GateStartOffset: "0 ns"
   GateEndOffset:   "400 ns"
-  
   T0Producer:    @nil  # must override
   T0selProducer: @nil  # must override
   
 } # gatesFromTracks_icarus
 
-
 END_PROLOG
 
+# ------------------------------------------------------------------------------
 process_name: storeTree
 
 services: {
+
   @table::triggeremu_data_config_icarus.services # from triggeremu_data_config_icarus.fcl
   @table::icarus_common_services
   message:     @local::icarus_message_services_interactive_debug
@@ -81,6 +81,7 @@ services: {
   TFileService: {
     fileName: "timedtracks_store_triggeremu.root"
   }
+
 }
 
 # customization of message destinations from trigger emulation
@@ -93,18 +94,20 @@ services.SpaceChargeService: @local::icarus_spacecharge
 
 physics: {
   filters: {
+
     t0selectorW: {
       module_type: TimedTrackSelectorCRT
       #AngleCosCut: -0.9396926
       #TrackTimeTags: [ pandoraGausCryoW, pandoraGausCryoE ]
       TrackTimeTags: [ "CRTT0MatchingW" ]
+    } # t0selectorW
 
-    }
     t0selectorE: {
       module_type: TimedTrackSelectorCRT
       #AngleCosCut: -0.9396926
       TrackTimeTags: [ "CRTT0MatchingE" ]
     }
+
   }
 
   producers: {
@@ -114,6 +117,7 @@ physics: {
       T0Producer:    "CRTT0MatchingE"
       T0selProducer: t0selectorE
     }
+    
     gatesFromTracksW: {
       @table::gatesFromTracks_icarus
       T0Producer:    "CRTT0MatchingW"
@@ -134,7 +138,6 @@ physics: {
       @table::triggeremu_data_config_icarus.producers.simSlidingORM1W
       Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[13]  # S9
     }
-
     simSlidingORS4E: {
       @table::triggeremu_data_config_icarus.producers.simSlidingORM1E
       Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsWindowPair[11]  # S4
@@ -193,6 +196,7 @@ physics: {
       TrackModuleLabel: "pandoraTrackGausCryoE"
       module_type: "GnocchiCalorimetry"
     }
+
     calorimetryCryoW: {
       @table::standard_gnocchicaloicarus  # from calorimetryICARUS.fcl
       AssocHitModuleLabel: ""
@@ -236,6 +240,7 @@ physics: {
       TrackModuleLabel: "pandoraTrackGausCryoW"
       module_type: "GnocchiCalorimetry"
     }
+
     newopflashCryoE: {
         AlgoConfig: {
           DebugMode: false
@@ -261,6 +266,7 @@ physics: {
         }
         module_type: "ICARUSFlashFinder"
     }
+
     newopflashCryoW: {
         AlgoConfig: {
           DebugMode: false
@@ -290,6 +296,7 @@ physics: {
   }
 
   analyzers: {
+
     t0TreeStoreW: {
       @table::timetracktreestorage_base
       T0selProducer: "t0selectorW"

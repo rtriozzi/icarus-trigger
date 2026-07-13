@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+
+<!-- Production Project -->
+
+<!DOCTYPE project [
+<!ENTITY release      "v09_89_01" >
+<!ENTITY file_type    "data"  > 
+<!ENTITY run_type     "offbeamminbias"   >
+<!ENTITY name         "trigger_efficiency_run5a">
+<!ENTITY nevents      "500000">
+<!ENTITY num_jobs     "2600">
+<!ENTITY prod_version "prod">
+<!ENTITY scratch_dir  "/pnfs/icarus/scratch/users/rtriozzi">
+]>
+
+<job>
+  
+  <project name="&name;">
+  <numevents>&nevents;</numevents>
+  <os>SL7</os>
+  <resource>DEDICATED,OPPORTUNISTIC</resource>
+  <larsoft>
+    <tag>&release;</tag>
+    <qual>e26:prof</qual>
+  </larsoft>
+  
+  <stage name = "stage0"> <!-- Stage0 reconstruction: low-level signal processing -->
+    <fcl>stage0_run2_icarus.fcl</fcl> 
+    <outdir>&scratch_dir;/&name;/stage0</outdir>
+    <workdir>&scratch_dir;/&name;/stage0</workdir>
+    <logdir>&scratch_dir;/&name;/stage0</logdir>
+    <bookdir>&scratch_dir;/&name;/stage0</bookdir>
+    <inputlist>/exp/icarus/app/users/rtriozzi/productions/trigger/run5/run5a/ListRun5a_Raw.list</inputlist> 
+    <numjobs>&num_jobs;</numjobs> 
+    <datatier>reconstructed</datatier> 
+    <memory>8000</memory> 
+    <jobsub>--expected-lifetime=24h</jobsub> 
+    <disk>320GB</disk> 
+  </stage>
+
+  <stage name = "stage1"> <!-- Stage1 reconstruction: Pandora reconstruction -->
+    <fcl>/exp/icarus/app/users/rtriozzi/productions/trigger/run5/stage1_run2_1d_icarus_alltracks.fcl</fcl> 
+    <outdir>&scratch_dir;/&name;/stage1</outdir>
+    <workdir>&scratch_dir;/&name;/stage1</workdir>
+    <logdir>&scratch_dir;/&name;/stage1</logdir>
+    <bookdir>&scratch_dir;/&name;/stage1</bookdir>
+    <numjobs>&num_jobs;</numjobs> 
+    <datatier>reconstructed</datatier> 
+    <memory>8000</memory> 
+    <jobsub>--expected-lifetime=24h</jobsub> 
+    <disk>320GB</disk> 
+  </stage>
+
+  <stage name = "ana"> <!-- NTuple making -->
+    <fcl>NTuples_CRT_TrigEmu_LooseOpFlash_AllMjs.fcl</fcl> 
+    <outdir>&scratch_dir;/&name;/ana</outdir>
+    <workdir>&scratch_dir;/&name;/ana</workdir>
+    <logdir>&scratch_dir;/&name;/ana</logdir>
+    <bookdir>&scratch_dir;/&name;/ana</bookdir>
+    <numjobs>&num_jobs;</numjobs> 
+    <datatier>reconstructed</datatier> 
+    <memory>4000</memory> 
+    <jobsub>--expected-lifetime=6h</jobsub> 
+    <disk>160GB</disk> 
+  </stage>
+
+  <filetype>&file_type;</filetype>
+  <runtype>&run_type;</runtype>
+
+</project>
+
+</job>
