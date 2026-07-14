@@ -1,0 +1,35 @@
+font.size           : 14
+ 
+# title
+axes.titlesize      : 12
+axes.titlelocation  : right  
+axes.titlecolor     : gray
+
+# labels
+axes.labelsize      : 16
+xaxis.labellocation : right 
+yaxis.labellocation : top 
+ 
+# legend
+legend.loc          : best
+legend.fontsize     : 8.5
+legend.fancybox     : False
+legend.handlelength : 1
+ 
+# major ticks
+xtick.labelsize     : 14
+ytick.labelsize     : 14
+xtick.direction     : in
+ytick.direction     : in
+xtick.major.size    : 6
+ytick.major.size    : 6
+ 
+# minor ticks
+xtick.minor.visible : True
+ytick.minor.visible : True
+xtick.minor.size    : 3
+ytick.minor.size    : 3
+
+# ticks on all sides
+xtick.top           : True
+ytick.right         : True

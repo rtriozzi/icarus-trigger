@@ -1,2 +1,11 @@
+# ignore plots
 **/plots
+
+# don't push data...
 data/
+
+# ignore egg-info
+**/*.egg-info
+
+# misc
+**/*.DS_Store
