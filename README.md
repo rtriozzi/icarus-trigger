@@ -1,6 +1,10 @@
 # `icarus-trigger`
 
 A set of tools developed over the years to investigate the ICARUS trigger performance.
+- [Setup on CNAF and FNAL machines](#setup-on-cnaf-and-fnal-machines)
+- [Trigger rate investigations](#trigger-rate-investigations)
+- [Process data and submit jobs](#process-data-and-submit-jobs)
+- [Select stopping muons with trigger emulation](#select-stopping-muons-with-trigger-emulation)
 
 ### Setup on CNAF and FNAL machines
 
@@ -10,7 +14,7 @@ First, setup the ICARUS products, and an icaruscode tag:
 source /cvmfs/icarus.opensciencegrid.org/products/icarus/setup_icarus.sh
 setup icaruscode v09_89_01 -q e26:prof
 ```
-which is what I relied on for the inaugural ICARUS trigger paper, recently [published on JINST]([url](https://iopscience.iop.org/article/10.1088/1748-0221/20/10/P10044)).
+which is what I relied on for the inaugural ICARUS trigger paper, recently [published on JINST](https://iopscience.iop.org/article/10.1088/1748-0221/20/10/P10044).
 Then, create a Python virutal environment,
 ```
 python -m venv env
@@ -25,6 +29,19 @@ jupyter notebook --no-browser
 # open the link on a web browser
 ```
 If you're running the notebook on a FNAL machine, forward it to your local machine: to do this, `ssh` into the FNAL GPVM with `-L <port>:localhost:<port>`, where `<port>` is the port that the notebook opens with (e.g., `8888`).
+
+### Trigger rate investigations
+
+There is a dedicated ICARUS database to look into trigger information (rates, hat plots, ...).
+Some tools developed by Gianluca Petrillo (petrillo@slac.stanford.edu) are provided here.
+
+To download database data, first enstablish a tunnel to ifdbdaqrep01 via a GPVM.
+Then, for example:
+```
+python3 ../scripts/TriggerDatabaseAccess.py --password=<password> --fromrun=13799 --torun=13802
+```
+
+You can analyze the resulting files with `notebooks/TriggerRates.ipynb`.
 
 ### Process data and submit jobs
 
