@@ -2,7 +2,9 @@
 **/plots
 
 # don't push data...
-data/
+data/*
+!data/input/
+!data/input/**
 
 # ignore egg-info
 **/*.egg-info
