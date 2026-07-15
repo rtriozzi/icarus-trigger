@@ -5,6 +5,7 @@ A set of tools developed over the years to investigate the ICARUS trigger perfor
 - [Trigger rate investigations](#trigger-rate-investigations)
 - [Process data and submit jobs](#process-data-and-submit-jobs)
 - [Select stopping muons with trigger emulation](#select-stopping-muons-with-trigger-emulation)
+- [Trigger efficiency analysis](#trigger-efficiency-analysis)
 
 ### Setup on CNAF and FNAL machines
 
@@ -64,3 +65,7 @@ Launch the analysis on a whole batch of data with `scripts/LaunchStoppingMuonAna
 Note: launch this in the background and monitor the results (`nohup bash scripts/LaunchStoppingMuonAnalysis.sh > Ouput.out &`); you should be using `tmux` or `screen` if you're working within a SL7 container.
 
 The output is a file where some of the stopping muon properties are stored along with the result of the trigger emulation.
+
+### Trigger efficiency analysis
+
+To extract trigger efficiencies (and more), the output of the analysis is all you need. Take a look at `notebooks/efficiency` and `notebooks/calorimetry`.
