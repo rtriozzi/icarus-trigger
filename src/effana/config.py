@@ -18,12 +18,19 @@ EFFICIENCY_VARS_RUN3 = [
   "closest_flash_t", "closest_flash_y", "closest_flash_z", "nearest_flash_t", "nearest_flash_y", "nearest_flash_z"
 ]
 
+EFFICIENCY_VARS_MC_RUN2 = [
+  "run", "event", "pdg", "energy",
+  "S3", "S5", "S7", "S10", "S15", 
+  "end_x", "end_y", "end_z"
+]
+
 EFFICIENCY_VARS = {
   'Run1': EFFICIENCY_VARS_RUN2,
   'Run2': EFFICIENCY_VARS_RUN2,
   'Run3': EFFICIENCY_VARS_RUN3,
   'Run4': EFFICIENCY_VARS_RUN3,
   'Run5': EFFICIENCY_VARS_RUN3,
+  'MCRun2': EFFICIENCY_VARS_MC_RUN2,
 }
 
 ADDER_FACTORS = {

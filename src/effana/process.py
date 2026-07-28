@@ -9,23 +9,33 @@ def ImportData(
   cryo : str = 'west',
   run : str = 'Run2',
 ):
-  # grab west data
-  df_W = pandas.read_csv(
-    RUN_SETTINGS['west'],
+  
+  if cryo == 'single':
+    df = pandas.read_csv(
+    RUN_SETTINGS['single'],
     names=EFFICIENCY_VARS[run],
     sep='\t', 
-    index_col=False,
+    index_col=False, 
   )
-  df_W = df_W.drop_duplicates()
 
-  # grab east data
-  df_E = pandas.read_csv(
-    RUN_SETTINGS['east'],
-    names=EFFICIENCY_VARS[run],
-    sep='\t', 
-    index_col=False,
-  )
-  df_E = df_E.drop_duplicates()
+  else:
+    # grab west data
+    df_W = pandas.read_csv(
+      RUN_SETTINGS['west'],
+      names=EFFICIENCY_VARS[run],
+      sep='\t', 
+      index_col=False,
+    )
+    df_W = df_W.drop_duplicates()
+
+    # grab east data
+    df_E = pandas.read_csv(
+      RUN_SETTINGS['east'],
+      names=EFFICIENCY_VARS[run],
+      sep='\t', 
+      index_col=False,
+    )
+    df_E = df_E.drop_duplicates()
 
   match cryo:
     # just return west stuff
