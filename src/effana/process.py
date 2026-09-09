@@ -143,3 +143,26 @@ def ComputeEfficiencyEnergy(
   centers = numpy.array(centers); errors_centers = numpy.array(errors_centers)
   
   return centers, errors_centers, efficiency, err_efficiency, counts
+
+
+def GetPerRunEfficiency(
+  df : pandas.DataFrame,
+):
+  
+
+  df_run = df.groupby('run')['S4'].agg(k='sum', n='count').reset_index()
+
+  # efficiency
+  df_run['S4'] = df_run['k'] / df_run['n']
+
+  # C-P error on efficiency
+  ci = df_run.apply(
+    lambda r: scipy.stats.binomtest(int(r.k), int(r.n)).proportion_ci(confidence_level=0.682),
+    axis = 1,
+  )
+  df_run['err_lo'] = df_run['S4'] - ci.map(lambda c: c.low)
+  df_run['err_hi'] = ci.map(lambda c: c.high) - df_run['S4']
+
+  df_run_filtered = df_run[['run', 'S4', 'err_lo', 'err_hi', 'n']]
+
+  return df_run_filtered
